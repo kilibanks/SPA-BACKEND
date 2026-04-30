@@ -1,0 +1,1 @@
+-- Initial migration: Create users table
