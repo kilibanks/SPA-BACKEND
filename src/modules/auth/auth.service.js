@@ -4,42 +4,115 @@ const tokenService = require("../../services/token.service");
 const emailService = require("../../services/email.service");
 const ApiError = require("../../utils/ApiError");
 
-const register = async ({ name, email, password }) => {
-  const existingUser = await userRepository.findByEmail(email);
-  if (existingUser) {
-    throw new ApiError(409, "Email already in use");
-  }
+const register = async ({
+  firstName,
+  surname,
+  contact,
+  gender,
+  email,
+  password,
+  role
+}) => {
 
   const hashedPassword = await bcrypt.hash(password, 12);
-  const user = await userRepository.create({
-    name,
+
+  let user;
+
+  // ✅ CUSTOMER
+if (role === "customer") {
+  const existing = await userRepository.findCustomerByEmailOrPhone(email, contact);
+
+  if (existing.length > 0) {
+    const emailExists = existing.some(u => u.email === email);
+    const phoneExists = existing.some(u => u.phone === contact);
+
+    if (emailExists && phoneExists) {
+      throw new ApiError(409, "Phone number and email already in use for selected account");
+    }
+    if (emailExists) {
+      throw new ApiError(409, "Email already in use for selected account");
+    }
+    if (phoneExists) {
+      throw new ApiError(409, "Phone number already in use for selected account");
+    }
+  }
+
+  user = await userRepository.createCustomer({
+    first_name: firstName,
+    last_name: surname || null,
+    phone: contact || null,
+    gender: ["Male", "Female", "Other", "Prefer not to say"].includes(gender) ? gender : "Other",
     email,
-    password: hashedPassword,
+    hashed_password: hashedPassword
+  });
+}
+
+  else if (role === "supplier") {
+  const existing = await userRepository.findSupplierByEmailOrPhone(email, contact);
+
+  if (existing.length > 0) {
+    const emailExists = existing.some(u => u.email === email);
+    const phoneExists = existing.some(u => u.phone === contact);
+
+    if (emailExists && phoneExists) {
+      throw new ApiError(409, "Phone number and email already in use for selected account");
+    }
+    if (emailExists) {
+      throw new ApiError(409, "Email already in use for selected account");
+    }
+    if (phoneExists) {
+      throw new ApiError(409, "Phone number already in use for selected account");
+    }
+  }
+
+  user = await userRepository.createSupplier({
+    supplier_name: `${firstName} ${surname || ""}`.trim(),
+    contact_person: firstName,
+    phone: contact || null,
+    address: null,
+    email,
+    hashed_password: hashedPassword
+  });
+}
+
+  else {
+    throw new ApiError(400, "Invalid role");
+  }
+
+  // Send email
+  emailService.sendWelcomeEmail(email, firstName)
+    .catch(err => console.error("Email failed:", err.message));
+
+  const token = tokenService.generateToken({
+    email,
+    role
   });
 
-  // Send welcome email
-  await emailService.sendWelcomeEmail(user.email, user.name);
-
-  const token = tokenService.generateToken({ id: user.id, email: user.email });
-  const { password: _, ...userWithoutPassword } = user;
-  return { user: userWithoutPassword, token };
+  return { user, token };
 };
 
-const login = async ({ email, password }) => {
-  const user = await userRepository.findByEmail(email);
+const login = async ({ email, password, role }) => {
+  const user = await userRepository.findByEmailAndRole(email, role);
+
   if (!user) {
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  const isPasswordValid = await bcrypt.compare(password, user.hashed_password);
+
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  const token = tokenService.generateToken({ id: user.id, email: user.email });
+  const token = tokenService.generateToken({
+    id: user.customer_id || user.supplier_id || user.admin_id,
+    email: user.email,
+    role
+  });
 
-  const { password: _, ...userWithoutPassword } = user;
-  return { user: userWithoutPassword, token };
+  const { hashed_password, ...safeUser } = user;
+
+  return { user: safeUser, token };
 };
 
 module.exports = { register, login };
