@@ -1,9 +1,15 @@
 const express = require("express");
 const cors = require('cors');
+
 const app = express();
-
-
 app.use(cors());
+
+const paymentRoutes = require("./modules/payments/payment.routes");
+
+
+
+
+
 
 // Middlewares
 app.use(express.json());
@@ -13,6 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require("./modules/auth/auth.routes");
 const userRoutes = require("./modules/users/user.routes");
 const appointmentRoutes = require("./modules/appointments/appointment.routes");
+
+
+app.use("/api/v1/payments", paymentRoutes);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
