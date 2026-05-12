@@ -16,7 +16,7 @@ const createDeal = async ({ buyerPhone, amount }) => {
     const payload = {
       amount,
       buyerPhone: normalizePhone(buyerPhone),
-      sellerPhone: normalizePhone("0793590690"),
+      sellerPhone: normalizePhone("0793590680"),
       description: "Service",
     };
 
