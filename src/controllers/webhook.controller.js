@@ -19,6 +19,7 @@ exports.handle = async (req, res) => {
 
     // Step 2: Parse the body
     const event = JSON.parse(req.body.toString());
+    console.log("📦 Raw event:", JSON.stringify(event, null, 2));
     const { transactionId, status } = event;
 
     console.log(`✅ Webhook received: ${transactionId} → ${status}`);
