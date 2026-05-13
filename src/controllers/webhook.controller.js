@@ -5,11 +5,11 @@ exports.handle = async (req, res) => {
   try {
     // Step 1: Verify signature
     const signature = req.headers["x-pesacrow-signature"];
-    const secret = process.env.PESACROW_WEBHOOK_SECRET; // from your dashboard
+    const secret = process.env.PESACROW_WEBHOOK_SECRET;
 
     const expected = crypto
       .createHmac("sha256", secret)
-      .update(req.body) // raw body, NOT parsed JSON
+      .update(req.body)
       .digest("hex");
 
     if (signature !== expected) {
@@ -20,44 +20,41 @@ exports.handle = async (req, res) => {
     // Step 2: Parse the body
     const event = JSON.parse(req.body.toString());
     console.log("📦 Raw event:", JSON.stringify(event, null, 2));
-    const { transactionId, status } = event;
 
-    console.log(`✅ Webhook received: ${transactionId} → ${status}`);
+    // ✅ Destructure from event.data, alias newStatus → status
+    const { transactionId, externalId, newStatus: status, oldStatus, amount } = event.data;
+
+    console.log(`✅ Webhook received: [${event.event}] ${transactionId} → ${oldStatus} → ${status}`);
 
     // Step 3: Handle each status
     switch (status) {
       case "held":
-        // Money received from buyer, sitting in escrow
-        console.log(`💰 Payment held for ${transactionId}`);
+        console.log(`💰 Payment of KES ${amount} held for ${transactionId} (order: ${externalId})`);
+        // TODO: mark order as payment_received
         break;
 
       case "delivered":
-        // You marked as delivered, waiting for buyer SMS approval
         console.log(`📦 Marked delivered for ${transactionId}`);
         break;
 
       case "released":
-        // 🎉 Buyer approved! Money sent to your M-Pesa
-        console.log(`🎉 Payment released for ${transactionId}`);
-        // TODO: update your DB order status to "paid"
+        console.log(`🎉 Payment released for ${transactionId} (order: ${externalId})`);
+        // TODO: update DB order status to "paid"
         break;
 
       case "disputed":
-        // Buyer raised an issue
         console.log(`⚠️ Dispute raised for ${transactionId}`);
         // TODO: flag order for review
         break;
 
       case "refunded":
-        // Buyer was refunded
         console.log(`↩️ Refunded for ${transactionId}`);
         break;
 
       default:
-        console.log(`Unknown status: ${status}`);
+        console.log(`⚠️ Unknown status "${status}" for event: ${event.event}`);
     }
 
-    // Always return 200 so PesaCrow stops retrying
     return res.status(200).json({ received: true });
 
   } catch (error) {
