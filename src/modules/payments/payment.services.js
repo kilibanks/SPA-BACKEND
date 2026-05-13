@@ -42,27 +42,32 @@ const createDeal = async ({ buyerPhone, amount }) => {
   }
 };
 
-// Waits for the webhook to emit a specific status for a transactionId
-const waitForStatus = (transactionId, targetStatus, timeoutMs = 90000) => {
-  return new Promise((resolve, reject) => {
+// Waits for the webhook to emit a pending_payment status for a transactionId
+const waitForStatus = (transactionId, timeoutMs = 27000) => {
+  return new Promise((resolve) => {
     const timer = setTimeout(() => {
       dealEvents.off(transactionId, handler);
-      reject(new Error(`Timeout waiting for "${targetStatus}" on ${transactionId}`));
+      resolve({
+        paid: false,
+        status: "timeout",
+        transactionId,
+        message: "Payment not received. Please try again.",
+      });
     }, timeoutMs);
 
     const handler = (eventData) => {
-      if (eventData.newStatus === targetStatus) {
-        clearTimeout(timer);
-        dealEvents.off(transactionId, handler);
-        resolve({ paid: true, status: targetStatus, transactionId });
-      }
+      clearTimeout(timer);
+      dealEvents.off(transactionId, handler);
 
-      // Early exit on terminal failure statuses
-      const failed = ["cancelled", "failed", "rejected", "refunded", "disputed"];
-      if (failed.includes(eventData.newStatus)) {
-        clearTimeout(timer);
-        dealEvents.off(transactionId, handler);
-        resolve({ paid: false, status: eventData.newStatus, transactionId });
+      if (eventData.newStatus === "held") {
+        resolve({ paid: true, status: "held", transactionId });
+      } else {
+        resolve({
+          paid: false,
+          status: eventData.newStatus,
+          transactionId,
+          message: `Payment ${eventData.newStatus}. Please try again.`,
+        });
       }
     };
 
