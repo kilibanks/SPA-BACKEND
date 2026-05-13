@@ -56,6 +56,9 @@ const waitForStatus = (transactionId, timeoutMs = 27000) => {
     }, timeoutMs);
 
     const handler = (eventData) => {
+      // ✅ Ignore — payment still in progress
+      if (eventData.newStatus === "pending_payment") return;
+
       clearTimeout(timer);
       dealEvents.off(transactionId, handler);
 
