@@ -19,11 +19,6 @@ exports.handle = async (req, res) => {
 
     // Step 2: Parse the body
     const event = JSON.parse(req.body.toString());
-    // 🔍 ADD THESE TEMPORARILY
-console.log("event type:", typeof event);
-console.log("event keys:", Object.keys(event));
-console.log("event.data:", event.data);
-console.log("raw body:", req.body.toString());
     console.log("📦 Raw event:", JSON.stringify(event, null, 2));
 
     // ✅ Destructure from event.data, alias newStatus → status
