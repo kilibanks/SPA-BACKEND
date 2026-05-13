@@ -1,18 +1,35 @@
 const { Queue, Worker } = require('bullmq');
+const IORedis = require('ioredis');
 const logger = require('../utils/logger');
 
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-};
+const connection = new IORedis(process.env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+});
+
+connection.on('connect', () => {
+  logger.info('Redis connected');
+});
+
+connection.on('error', (err) => {
+  logger.error(`Redis error: ${err.message}`);
+});
 
 // Define queues
-const emailQueue = new Queue('email', { connection: redisConnection });
+const emailQueue = new Queue('email', {
+  connection,
+});
 
 const initQueues = () => {
   const emailProcessor = require('./processors/email.processor');
 
-  const emailWorker = new Worker('email', emailProcessor, { connection: redisConnection });
+  const emailWorker = new Worker(
+    'email',
+    emailProcessor,
+    {
+      connection,
+    }
+  );
 
   emailWorker.on('completed', (job) => {
     logger.info(`Email job ${job.id} completed`);

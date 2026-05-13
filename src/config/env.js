@@ -8,7 +8,7 @@ const requiredEnvVars = [
   'JWT_SECRET',
   'JWT_EXPIRES_IN',
   'REDIS_HOST',
-  'REDIS_PORT',
+  'REDIS_TOKEN',
   'MAIL_HOST',
   'MAIL_PORT',
   'MAIL_USER',

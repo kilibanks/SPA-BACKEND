@@ -104,4 +104,49 @@ const topUp = async ({ buyerPhone, amount }) => {
   return result;
 };
 
-module.exports = { topUp };
+const deliverDeal = async (transactionId) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/deals/${transactionId}/deliver`,
+      {},
+      {
+        headers: {
+          "x-api-key": process.env.API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log("Deliver response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("deliverDeal ERROR:", error.response?.data || error.message);
+    throw new Error("Mark as delivered failed");
+  }
+};
+
+// Also add polling for "released" status
+const pollForRelease = async (transactionId, { intervalMs = 5000, timeoutMs = 300000 } = {}) => {
+  const url = `${BASE_URL}/open/deals/${transactionId}`;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    try {
+      const { data } = await axios.get(url);
+      const status = data?.data?.status;
+      console.log(`Polling for release ${transactionId}:`, status);
+
+      if (status === "released") return { released: true, status, transactionId };
+      if (status === "refunded" || status === "failed" || status === "disputed") {
+        return { released: false, status, transactionId };
+      }
+    } catch (error) {
+      console.error("Release poll error:", error.response?.data || error.message);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  return { released: false, status: "timeout", transactionId };
+};
+
+module.exports = { topUp, deliverDeal, pollForRelease };

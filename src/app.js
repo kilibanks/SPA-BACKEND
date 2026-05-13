@@ -7,8 +7,10 @@ app.use(cors());
 const paymentRoutes = require("./modules/payments/payment.routes");
 
 
+const webhookRoutes = require("./services/webhook.routes");
 
 
+app.use("/api/v1", webhookRoutes);
 
 
 // Middlewares

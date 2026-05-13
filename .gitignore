@@ -30,3 +30,5 @@ build/
 # Testing
 coverage/
 .nyc_output/
+
+generate-signature.js
