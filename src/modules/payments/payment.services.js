@@ -85,7 +85,7 @@ const topUp = async ({ buyerPhone, amount }) => {
   );
 
   // ✅ No polling — resolves when webhook fires
-  return waitForStatus(transactionId, "held", 90000);
+  return waitForStatus(transactionId, "held", 27000);
 };
 
 const deliverDeal = async (transactionId) => {
@@ -103,7 +103,7 @@ const deliverDeal = async (transactionId) => {
   }
 };
 
-const waitForRelease = (transactionId, timeoutMs = 300000) => {
+const waitForRelease = (transactionId, timeoutMs = 360000) => {
   return waitForStatus(transactionId, "released", timeoutMs);
 };
 
