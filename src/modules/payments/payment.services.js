@@ -4,9 +4,8 @@ const EventEmitter = require("events");
 
 const BASE_URL = process.env.PESA_CROW_BASE_URL;
 
-// Shared event bus — webhook controller emits here, topUp/deliverDeal listen here
 const dealEvents = new EventEmitter();
-dealEvents.setMaxListeners(50); // allow concurrent deals
+dealEvents.setMaxListeners(50);
 module.exports.dealEvents = dealEvents;
 
 const normalizePhone = (phone) => {
@@ -42,7 +41,6 @@ const createDeal = async ({ buyerPhone, amount }) => {
   }
 };
 
-// Waits for the webhook to emit a pending_payment status for a transactionId
 const waitForStatus = (transactionId, timeoutMs = 27000) => {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
@@ -56,7 +54,6 @@ const waitForStatus = (transactionId, timeoutMs = 27000) => {
     }, timeoutMs);
 
     const handler = (eventData) => {
-      // ✅ Ignore — payment still in progress
       if (eventData.newStatus === "pending_payment") return;
 
       clearTimeout(timer);
@@ -92,8 +89,7 @@ const topUp = async ({ buyerPhone, amount }) => {
     { headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" } }
   );
 
-  // ✅ No polling — resolves when webhook fires
-  return waitForStatus(transactionId, "held", 27000);
+  return waitForStatus(transactionId, 27000); // ✅ 2 args only
 };
 
 const deliverDeal = async (transactionId) => {
@@ -111,8 +107,8 @@ const deliverDeal = async (transactionId) => {
   }
 };
 
-const waitForRelease = (transactionId, timeoutMs = 360000) => {
-  return waitForStatus(transactionId, "released", timeoutMs);
+const waitForRelease = (transactionId) => {
+  return waitForStatus(transactionId, 180000); // ✅ 2 args only, 3 mins
 };
 
 module.exports = { topUp, deliverDeal, waitForRelease, dealEvents };
