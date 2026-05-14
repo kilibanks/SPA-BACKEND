@@ -1,6 +1,6 @@
 // webhook.controller.js
 const crypto = require("crypto");
-const { dealEvents } = require("../services/payment.services"); // ✅ import dealEvents
+const { dealEvents } = require("../modules/payments/payment.services"); // ✅ import dealEvents
 
 exports.handle = async (req, res) => {
   try {
