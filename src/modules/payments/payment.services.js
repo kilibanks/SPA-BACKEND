@@ -26,11 +26,13 @@ const createDeal = async ({ buyerPhone, amount }) => {
       description: "Service",
     };
 
+    if (amount<20) throw new Error("The minimum amount is KES 20");
+
+
     const dealPush = await axios.post(`${BASE_URL}/deals/create`, payload, {
       headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" },
     });
 
-    if (amount<20) throw new Error("The minimum amount is KES 20");
 
     const transactionId =
       dealPush.data?.transactionId ?? dealPush.data?.data?.transactionId;
