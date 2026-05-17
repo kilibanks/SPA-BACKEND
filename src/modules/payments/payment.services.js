@@ -41,9 +41,17 @@ const createDeal = async ({ buyerPhone, amount }) => {
 
     return transactionId;
   } catch (error) {
-    console.error("PESACROW createDeal ERROR:", error.response?.data || error.message);
-    throw new Error("Deal creation failed");
-  }
+  console.error(
+    "PESACROW createDeal ERROR:",
+    error.response?.data || error.message
+  );
+
+  throw new Error(
+    error.response?.data?.message ||
+    error.message ||
+    "Deal creation failed"
+  );
+}
 };
 
 const waitForStatus = (transactionId, timeoutMs = 27000) => {
