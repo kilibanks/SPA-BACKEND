@@ -30,9 +30,12 @@ const createDeal = async ({ buyerPhone, amount }) => {
       headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" },
     });
 
+    if (amount<20) throw new Error("The minimum amount is KES 20");
+
     const transactionId =
       dealPush.data?.transactionId ?? dealPush.data?.data?.transactionId;
     if (!transactionId) throw new Error("transactionId missing from createDeal response");
+
 
     return transactionId;
   } catch (error) {
