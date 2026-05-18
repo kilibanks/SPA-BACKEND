@@ -11,6 +11,12 @@ const {
   verifyEmailSchema
 } = require('./auth.validation');
 
+
+
+router.get('/test', (req, res) => {
+  res.status(200).json({ message: 'Auth route is working!' });
+});
+
 router.post(
   '/register',
   validate(registerSchema),
