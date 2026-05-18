@@ -6,12 +6,29 @@ const ApiError = require("../../utils/ApiError");
 
 const register = async (req, res, next) => {
   try {
-    const { user, token } = await authService.register(req.body);
-    return res
-      .status(201)
-      .json(
-        ApiResponse.success("User registered successfully", { user, token }),
-      );
+    const result = await authService.register(req.body);
+
+    return res.status(201).json(
+      ApiResponse.success(
+        "Verification code sent to email",
+        result
+      )
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyEmail = async (req, res, next) => {
+  try {
+    const { user, token } = await authService.verifyEmail(req.body);
+
+    return res.status(200).json(
+      ApiResponse.success(
+        "Email verified successfully",
+        { user, token }
+      )
+    );
   } catch (error) {
     next(error);
   }
@@ -20,14 +37,19 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { user, token } = await authService.login(req.body);
+
     return res
       .status(200)
-      .json(ApiResponse.success("Login successful", { user, token }));
+      .json(
+        ApiResponse.success(
+          "Login successful",
+          { user, token }
+        )
+      );
   } catch (error) {
     next(error);
   }
 };
-
 
 const checkEmail = async (req, res, next) => {
   try {
@@ -40,18 +62,45 @@ const checkEmail = async (req, res, next) => {
     }
 
     res.status(200).json({ roles });
+
   } catch (err) {
     next(err);
   }
 };
 
 
-const logout = async (req, res, next) => {
+const resendVerification = async (req, res, next) => {
   try {
-    return res.status(200).json(ApiResponse.success("Logged out successfully"));
+    await authService.resendVerification(req.body); // 👈 pass full body (has email + role)
+    return res.status(200).json(
+      ApiResponse.success("Verification code resent")
+    );
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { register, login, checkEmail, logout };
+
+
+
+const logout = async (req, res, next) => {
+  try {
+    return res
+      .status(200)
+      .json(
+        ApiResponse.success("Logged out successfully")
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  register,
+  verifyEmail,
+  resendVerification,
+  login,
+  checkEmail,
+  logout
+};
+

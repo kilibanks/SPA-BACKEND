@@ -1,10 +1,10 @@
 const { emailQueue } = require("../jobs/queue");
 
-const sendWelcomeEmail = async (to, name) => {
+const sendWelcomeEmail = async (to, name, role) => {
   await emailQueue.add("welcome-email", {
     to,
     subject: "Welcome!",
-    html: `<h1>Hi ${name}, welcome aboard!</h1><p>We're glad to have you.</p>`,
+    html: `<h1>Hi ${name}, welcome aboard!</h1><p>We're glad to have you as a ${role}.</p>`,
   });
 };
 
@@ -35,8 +35,22 @@ const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
   });
 };
 
+const sendVerificationEmail = async (to, code) => {
+  await emailQueue.add("verification-email", {
+    to,
+    subject: "Verify Your Email",
+    html: `
+      <h2>Email Verification</h2>
+      <p>Your verification code is:</p>
+      <h1>${code}</h1>
+      <p>This code expires in 10 minutes.</p>
+    `,
+  });
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAppointmentStatusEmail,
+  sendVerificationEmail,
 };

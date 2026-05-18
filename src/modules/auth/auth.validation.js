@@ -25,10 +25,19 @@ const registerSchema = Joi.object({
   })
 });
 
+const verifyEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+  code: Joi.string().length(6).required(),
+});
+
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
   role: Joi.string().valid("admin", "supplier", "customer").required(),
 });
 
-module.exports = { registerSchema, loginSchema };
+module.exports = {
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema
+};
