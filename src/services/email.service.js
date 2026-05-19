@@ -69,7 +69,7 @@ const sendPaymentReceiptEmail = async (
 
       <p>Status: HELD (secured in escrow)</p>
 
-      <p>Thank you for booking with us.</p>
+      <p>Thank you for choosing us.</p>
     `,
   });
 
