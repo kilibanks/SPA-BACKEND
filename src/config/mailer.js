@@ -1,22 +1,20 @@
-const nodemailer = require("nodemailer");
+// config/mailer.js
+const nodemailer = require("nodemailer"); // ← was missing
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: process.env.MAIL_PORT,
-
+  host: "smtp.gmail.com",
+  port: 587,
   secure: false,
-
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
-
-  // FORCE IPV4
-  family: 4,
-
   tls: {
     rejectUnauthorized: false,
   },
+  socketTimeout: 10000,
+  greetingTimeout: 10000,
+  connectionTimeout: 10000,
 });
 
 module.exports = transporter;
