@@ -48,9 +48,39 @@ const sendVerificationEmail = async (to, code) => {
   });
 };
 
+
+const sendPaymentReceiptEmail = async (
+  to,
+  transactionId,
+  amount
+) => {
+
+  await emailQueue.add("payment-receipt", {
+    to,
+    subject: "Payment Receipt",
+    html: `
+      <h2>Payment Successful</h2>
+
+      <p>Your payment was received successfully.</p>
+
+      <p><strong>Transaction ID:</strong> ${transactionId}</p>
+
+      <p><strong>Amount:</strong> KES ${amount}</p>
+
+      <p>Status: HELD (secured in escrow)</p>
+
+      <p>Thank you for booking with us.</p>
+    `,
+  });
+
+};
+
+
+
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAppointmentStatusEmail,
   sendVerificationEmail,
+  sendPaymentReceiptEmail,
 };

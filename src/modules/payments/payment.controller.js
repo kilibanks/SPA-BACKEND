@@ -1,19 +1,26 @@
 // payment.controller.js
 const paymentService = require("./payment.services");
 
+
 exports.pay = async (req, res, next) => {
   try {
-    const { phone_number, amount } = req.body;
+
+    const { phone_number, amount, email } = req.body;
+
     const buyerPhone = phone_number;
 
-    if (!buyerPhone || !amount) {
+    if (!buyerPhone || !amount || !email) {
       return res.status(400).json({
         success: false,
-        message: "phone_number and amount are required",
+        message: "phone_number, email and amount are required",
       });
     }
 
-    const result = await paymentService.topUp({ buyerPhone, amount });
+    const result = await paymentService.topUp({
+      buyerPhone,
+      amount,
+      email,
+    });
 
     if (result.paid) {
       return res.status(200).json({
@@ -32,7 +39,9 @@ exports.pay = async (req, res, next) => {
 
     return res.status(408).json({
       success: false,
-      message: statusMessages[result.status] ?? "Payment not completed",
+      message:
+        statusMessages[result.status] ??
+        "Payment not completed",
       status: result.status,
       transactionId: result.transactionId,
     });

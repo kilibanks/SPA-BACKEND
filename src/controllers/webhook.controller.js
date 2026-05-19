@@ -2,6 +2,14 @@
 const crypto = require("crypto");
 const { dealEvents } = require("../modules/payments/payment.services"); // ✅ import dealEvents
 
+const paymentStore = require("../modules/payments/payment.store");
+
+const {
+  sendPaymentReceiptEmail,
+} = require("../services/email.service");
+
+
+
 exports.handle = async (req, res) => {
   try {
     const signature = req.headers["x-pesacrow-signature"];
@@ -29,7 +37,29 @@ exports.handle = async (req, res) => {
 
     switch (status) {
       case "held":
-        console.log(`💰 Payment of KES ${amount} held for ${transactionId} (order: ${externalId})`);
+
+        console.log(
+          `💰 Payment of KES ${amount} held for ${transactionId}`
+        );
+
+        const paymentData = paymentStore.get(transactionId);
+
+        if (paymentData?.email) {
+
+          await sendPaymentReceiptEmail(
+            paymentData.email,
+            transactionId,
+            amount
+          );
+
+          console.log(
+            `📧 Receipt sent to ${paymentData.email}`
+          );
+        }
+
+        // cleanup
+        paymentStore.delete(transactionId);
+
         break;
       case "delivered":
         console.log(`📦 Marked delivered for ${transactionId}`);

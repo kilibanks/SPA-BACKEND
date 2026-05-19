@@ -1,6 +1,7 @@
 // payment.services.js
 const axios = require("axios");
 const EventEmitter = require("events");
+const paymentStore = require("./payment.store");
 
 const BASE_URL = process.env.PESA_CROW_BASE_URL;
 
@@ -88,21 +89,42 @@ const waitForStatus = (transactionId, timeoutMs = 27000) => {
   });
 };
 
-const topUp = async ({ buyerPhone, amount }) => {
-  console.log("topUp called with:", { buyerPhone, amount });
+const topUp = async ({ buyerPhone, amount, email }) => {
+
   if (!buyerPhone) throw new Error("buyerPhone is required");
   if (!amount) throw new Error("amount is required");
+  if (!email) throw new Error("email is required");
 
   const normalizedPhone = normalizePhone(buyerPhone);
-  const transactionId = await createDeal({ buyerPhone: normalizedPhone, amount });
+
+  const transactionId = await createDeal({
+    buyerPhone: normalizedPhone,
+    amount,
+  });
+
+  // SAVE EMAIL TEMPORARILY
+  paymentStore.set(transactionId, {
+    email,
+    amount,
+    phone: normalizedPhone,
+  });
 
   await axios.post(
     `${BASE_URL}/payments/initiate-stk`,
-    { transactionId, buyerPhone: normalizedPhone, description: "Service" },
-    { headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" } }
+    {
+      transactionId,
+      buyerPhone: normalizedPhone,
+      description: "Service",
+    },
+    {
+      headers: {
+        "x-api-key": process.env.API_KEY,
+        "Content-Type": "application/json",
+      },
+    }
   );
 
-  return waitForStatus(transactionId, 27000); // ✅ 2 args only
+  return waitForStatus(transactionId, 27000);
 };
 
 const deliverDeal = async (transactionId) => {
