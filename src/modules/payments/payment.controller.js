@@ -58,10 +58,7 @@ exports.deliver = async (req, res, next) => {
     await paymentService.deliverDeal(transactionId);
 
     // Step 2: Poll until buyer approves and status becomes "released"
-    const result = await paymentService.pollForRelease(transactionId, {
-      intervalMs: 5000,   // check every 5 seconds
-      timeoutMs: 120000,  // wait up to 2 minutes for buyer to approve
-    });
+    const result = await paymentService.waitForRelease(transactionId);
 
     if (result.released) {
       return res.status(200).json({
