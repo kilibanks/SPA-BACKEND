@@ -21,8 +21,8 @@ const startServer = async () => {
     logger.info('MySQL connected successfully');
 
     // Initialize BullMQ queues
-    initQueues();
-    logger.info('Job queues initialized');
+    //initQueues();
+    //logger.info('Job queues initialized');
 
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);

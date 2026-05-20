@@ -1,7 +1,10 @@
-const { emailQueue } = require("../jobs/queue");
+//const { emailQueue } = require("../jobs/queue");
+const transporter = require("../../config/mailer");
+
 
 const sendWelcomeEmail = async (to, name, role) => {
-  await emailQueue.add("welcome-email", {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject: "Welcome!",
     html: `<h1>Hi ${name}, welcome aboard!</h1><p>We're glad to have you as a ${role}.</p>`,
@@ -9,16 +12,20 @@ const sendWelcomeEmail = async (to, name, role) => {
 };
 
 const sendPasswordResetEmail = async (to, resetLink) => {
-  await emailQueue.add("password-reset", {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject: "Password Reset Request",
-    html: `<p>Click the link below to reset your password:</p><a href="${resetLink}">${resetLink}</a>`,
+    html: `
+      <p>Click the link below to reset your password:</p>
+      <a href="${resetLink}">${resetLink}</a>
+    `,
   });
 };
-
 const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
   const appointmentDate = new Date(appointment.scheduled_at).toLocaleString();
-  await emailQueue.add("appointment-status", {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject: `Appointment ${status}`,
     html: `
@@ -36,7 +43,8 @@ const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
 };
 
 const sendVerificationEmail = async (to, code) => {
-  await emailQueue.add("verification-email", {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject: "Verify Your Email",
     html: `
@@ -49,30 +57,20 @@ const sendVerificationEmail = async (to, code) => {
 };
 
 
-const sendPaymentReceiptEmail = async (
-  to,
-  transactionId,
-  amount
-) => {
-
-  await emailQueue.add("payment-receipt", {
+const sendPaymentReceiptEmail = async (to, transactionId, amount) => {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject: "Payment Receipt",
     html: `
       <h2>Payment Successful</h2>
-
       <p>Your payment was received successfully.</p>
-
       <p><strong>Transaction ID:</strong> ${transactionId}</p>
-
       <p><strong>Amount:</strong> KES ${amount}</p>
-
       <p>Status: HELD (secured in escrow)</p>
-
       <p>Thank you for choosing us.</p>
     `,
   });
-
 };
 
 
