@@ -1,4 +1,4 @@
-const { Queue, Worker } = require('bullmq');
+/*const { Queue, Worker } = require('bullmq');
 const IORedis = require('ioredis');
 const logger = require('../utils/logger');
 
@@ -43,3 +43,5 @@ const initQueues = () => {
 };
 
 module.exports = { emailQueue, initQueues };
+
+*/
