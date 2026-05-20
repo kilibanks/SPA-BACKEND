@@ -1,10 +1,7 @@
-//const { emailQueue } = require("../jobs/queue");
-const transporter = require("../config/mailer");
-
+const sendMail = require("../config/mailer");
 
 const sendWelcomeEmail = async (to, name, role) => {
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+  await sendMail({
     to,
     subject: "Welcome!",
     html: `<h1>Hi ${name}, welcome aboard!</h1><p>We're glad to have you as a ${role}.</p>`,
@@ -12,8 +9,7 @@ const sendWelcomeEmail = async (to, name, role) => {
 };
 
 const sendPasswordResetEmail = async (to, resetLink) => {
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+  await sendMail({
     to,
     subject: "Password Reset Request",
     html: `
@@ -22,10 +18,10 @@ const sendPasswordResetEmail = async (to, resetLink) => {
     `,
   });
 };
+
 const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
   const appointmentDate = new Date(appointment.scheduled_at).toLocaleString();
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+  await sendMail({
     to,
     subject: `Appointment ${status}`,
     html: `
@@ -43,8 +39,7 @@ const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
 };
 
 const sendVerificationEmail = async (to, code) => {
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+  await sendMail({
     to,
     subject: "Verify Your Email",
     html: `
@@ -56,10 +51,8 @@ const sendVerificationEmail = async (to, code) => {
   });
 };
 
-
 const sendPaymentReceiptEmail = async (to, transactionId, amount) => {
-  await transporter.sendMail({
-    from: process.env.MAIL_FROM,
+  await sendMail({
     to,
     subject: "Payment Receipt",
     html: `
@@ -72,8 +65,6 @@ const sendPaymentReceiptEmail = async (to, transactionId, amount) => {
     `,
   });
 };
-
-
 
 module.exports = {
   sendWelcomeEmail,

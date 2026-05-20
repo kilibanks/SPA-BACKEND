@@ -1,19 +1,19 @@
-const nodemailer = require("nodemailer");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false, // ← fixes self-signed cert error
-  },
-});
+const client = SibApiV3Sdk.ApiClient.instance;
+client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
 
-transporter.verify((error) => {
-  if (error) console.error("Mail transporter error:", error);
-  else console.log("Mail transporter ready");
-});
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-module.exports = transporter;
+const sendMail = async ({ to, subject, html }) => {
+  const email = new SibApiV3Sdk.SendSmtpEmail();
+
+  email.sender = { name: "Your App", email: process.env.MAIL_USER };
+  email.to = [{ email: to }];
+  email.subject = subject;
+  email.htmlContent = html;
+
+  return await apiInstance.sendTransacEmail(email);
+};
+
+module.exports = sendMail;
