@@ -1,4 +1,4 @@
-const { emailQueue } = require('../queue');
+/*const { emailQueue } = require('../queue');
 const logger = require('../../utils/logger');
 
 // Runs every day at midnight — cleans up old completed/failed jobs
@@ -15,3 +15,5 @@ const startCleanupScheduler = async () => {
 };
 
 module.exports = { startCleanupScheduler };
+
+*/

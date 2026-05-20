@@ -1,5 +1,5 @@
 //const { emailQueue } = require("../jobs/queue");
-const transporter = require("../../config/mailer");
+const transporter = require("../config/mailer");
 
 
 const sendWelcomeEmail = async (to, name, role) => {

@@ -6,7 +6,7 @@ const app = require('./src/app');
 const { connectDB } = require('./src/config/db');
 const { validateEnv } = require('./src/config/env');
 const logger = require('./src/utils/logger');
-const { initQueues } = require('./src/jobs/queue');
+//const { initQueues } = require('./src/jobs/queue');
 
 
 // Validate environment variables on startup
