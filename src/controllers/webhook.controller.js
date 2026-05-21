@@ -1,15 +1,11 @@
 // webhook.controller.js
 const crypto = require("crypto");
-const { dealEvents } = require("../modules/payments/payment.services"); // ✅ import dealEvents
-
+const { dealEvents } = require("../modules/payments/payment.services");
 const paymentStore = require("../modules/payments/payment.store");
-
 const {
   sendPaymentReceiptEmail,
   sendAdminPaymentNotificationEmail,
 } = require("../services/email.service");
-
-
 
 exports.handle = async (req, res) => {
   try {
@@ -33,32 +29,25 @@ exports.handle = async (req, res) => {
 
     console.log(`✅ Webhook received: [${event.event}] ${transactionId} → ${oldStatus} → ${status}`);
 
-    // ✅ Notify any waiting waitForStatus / waitForRelease
     dealEvents.emit(transactionId, event.data);
 
     switch (status) {
-      case "held":
-
-        console.log(
-          `💰 Payment of KES ${amount} held for ${transactionId}`
-        );
+      case "held": {
+        console.log(`💰 Payment of KES ${amount} held for ${transactionId}`);
 
         const paymentData = paymentStore.get(transactionId);
 
         if (paymentData?.email) {
-          // Send receipt to customer
-    await sendPaymentReceiptEmail(paymentData.email, transactionId, amount);
-    console.log(`📧 Receipt sent to ${paymentData.email}`);
-
-    // Notify admin
-    await sendAdminPaymentNotificationEmail(paymentData.email, transactionId, amount);
-    console.log(`📧 Admin notified of payment from ${paymentData.email}`);
+          await Promise.all([
+            sendPaymentReceiptEmail(paymentData.email, transactionId, amount),
+            sendAdminPaymentNotificationEmail(paymentData.email, transactionId, amount),
+          ]);
+          console.log(`📧 Emails sent to ${paymentData.email} and admin`);
         }
 
-        // cleanup
         paymentStore.delete(transactionId);
-
         break;
+      }
       case "delivered":
         console.log(`📦 Marked delivered for ${transactionId}`);
         break;
