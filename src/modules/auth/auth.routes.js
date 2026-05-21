@@ -29,11 +29,11 @@ router.post(
   authController.verifyEmail
 );
 
-router.post(
+/*router.post(
   '/login',
   validate(loginSchema),
   authController.login
-);
+);*/
 
 router.post(
   '/logout',
