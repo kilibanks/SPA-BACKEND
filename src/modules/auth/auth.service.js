@@ -445,17 +445,25 @@ const initiateLogin = async ({ email, password, role }) => {
 
   const user = await userRepository.findByEmailAndRole(email, role);
 
-  if (!user) throw new ApiError(401, "Invalid credentials");
+  if (!user) {
+    console.log(`🔐 Login attempt FAILED — [${role}] ${email} — user not found`);
+    throw new ApiError(401, "Invalid credentials");
+  }
 
   const isPasswordValid = await bcrypt.compare(password, user.hashed_password);
 
-  if (!isPasswordValid) throw new ApiError(401, "Invalid credentials");
+  if (!isPasswordValid) {
+    console.log(`🔐 Login attempt FAILED — [${role}] ${email} — wrong password`);
+    throw new ApiError(401, "Invalid credentials");
+  }
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expires_at = new Date(Date.now() + 10 * 60 * 1000);
 
   await userRepository.createLoginCode({ email, role, code, expires_at });
   await sendLoginCodeEmail(email, code, role);
+
+  console.log(`📧 Verification code sent to ${email} for account [${role.toUpperCase()}]`);
 
   return { requiresCode: true, email, role };
 };
@@ -466,10 +474,14 @@ const verifyLoginCode = async ({ email, role, code }) => {
 
   const record = await userRepository.findLoginCode({ email, role, code });
 
-  if (!record) throw new ApiError(400, "Invalid verification code");
+  if (!record) {
+    console.log(`🔐 Login attempt FAILED — [${role}] ${email} — invalid 2FA code`);
+    throw new ApiError(400, "Invalid verification code");
+  }
 
   if (new Date(record.expires_at) < new Date()) {
     await userRepository.markLoginCodeUsed(record.id);
+    console.log(`🔐 Login attempt FAILED — [${role}] ${email} — 2FA code expired`);
     throw new ApiError(400, "Verification code expired");
   }
 
@@ -483,11 +495,11 @@ const verifyLoginCode = async ({ email, role, code }) => {
     role,
   });
 
-  const { hashed_password, ...safeUser } = user;
+  console.log(`✅ Login attempt SUCCESSFUL — [${role}] ${email}`);
 
+  const { hashed_password, ...safeUser } = user;
   return { user: safeUser, token };
 };
-
 
 
 module.exports = {
