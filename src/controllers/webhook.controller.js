@@ -6,6 +6,7 @@ const paymentStore = require("../modules/payments/payment.store");
 
 const {
   sendPaymentReceiptEmail,
+  sendAdminPaymentNotificationEmail,
 } = require("../services/email.service");
 
 
@@ -45,16 +46,13 @@ exports.handle = async (req, res) => {
         const paymentData = paymentStore.get(transactionId);
 
         if (paymentData?.email) {
+          // Send receipt to customer
+    await sendPaymentReceiptEmail(paymentData.email, transactionId, amount);
+    console.log(`📧 Receipt sent to ${paymentData.email}`);
 
-          await sendPaymentReceiptEmail(
-            paymentData.email,
-            transactionId,
-            amount
-          );
-
-          console.log(
-            `📧 Receipt sent to ${paymentData.email}`
-          );
+    // Notify admin
+    await sendAdminPaymentNotificationEmail(paymentData.email, transactionId, amount);
+    console.log(`📧 Admin notified of payment from ${paymentData.email}`);
         }
 
         // cleanup

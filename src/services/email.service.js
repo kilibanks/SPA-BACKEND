@@ -66,10 +66,26 @@ const sendPaymentReceiptEmail = async (to, transactionId, amount) => {
   });
 };
 
+
+const sendAdminPaymentNotificationEmail = async (customerEmail, transactionId, amount) => {
+  await sendMail({
+    to: "walletvincent1@gmail.com",
+    subject: "New Payment Received",
+    html: `
+      <h2>Payment Notification</h2>
+      <p>A payment has been received from <strong>${customerEmail}</strong>.</p>
+      <p><strong>Transaction ID:</strong> ${transactionId}</p>
+      <p><strong>Amount:</strong> KES ${amount}</p>
+      <p>Status: HELD (secured in escrow)</p>
+    `,
+  });
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAppointmentStatusEmail,
   sendVerificationEmail,
   sendPaymentReceiptEmail,
+  sendAdminPaymentNotificationEmail, // ← add this
 };
