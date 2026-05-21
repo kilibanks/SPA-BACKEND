@@ -37,7 +37,15 @@ exports.handle = async (req, res) => {
 
         const paymentData = paymentStore.get(transactionId);
 
-        if (paymentData?.email) {
+        if (!paymentData) {
+          console.log(`⚠️ No paymentData found for ${transactionId} — already processed or unknown`);
+          break;
+        }
+
+        // Delete FIRST to prevent duplicate processing if webhook fires twice
+        paymentStore.delete(transactionId);
+
+        if (paymentData.email) {
           await Promise.all([
             sendPaymentReceiptEmail(paymentData.email, transactionId, amount),
             sendAdminPaymentNotificationEmail(paymentData.email, transactionId, amount),
@@ -45,7 +53,6 @@ exports.handle = async (req, res) => {
           console.log(`📧 Emails sent to ${paymentData.email} and admin`);
         }
 
-        paymentStore.delete(transactionId);
         break;
       }
       case "delivered":
