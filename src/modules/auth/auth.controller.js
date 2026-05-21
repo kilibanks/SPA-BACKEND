@@ -95,12 +95,38 @@ const logout = async (req, res, next) => {
   }
 };
 
+
+
+
+const initiateLogin = async (req, res, next) => {
+  try {
+    const result = await authService.initiateLogin(req.body);
+    return res.status(200).json(
+      ApiResponse.success("Verification code sent to your email", result)
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyLoginCode = async (req, res, next) => {
+  try {
+    const { user, token } = await authService.verifyLoginCode(req.body);
+    return res.status(200).json(
+      ApiResponse.success("Login successful", { user, token })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   verifyEmail,
   resendVerification,
   login,
   checkEmail,
-  logout
+  logout,
+  initiateLogin,
+  verifyLoginCode,
 };
-

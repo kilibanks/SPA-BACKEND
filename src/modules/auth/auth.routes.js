@@ -50,4 +50,8 @@ router.post(
   authController.resendVerification
 );
 
+
+router.post("/login/initiate", authController.initiateLogin);
+router.post("/login/verify-code", authController.verifyLoginCode);
+
 module.exports = router;

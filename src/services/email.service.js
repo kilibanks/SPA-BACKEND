@@ -81,11 +81,30 @@ const sendAdminPaymentNotificationEmail = async (customerEmail, transactionId, a
   });
 };
 
+//2FA email function
+
+const sendLoginCodeEmail = async (to, code, role) => {
+  await sendMail({
+    to,
+    subject: "Your Login Verification Code",
+    html: `
+      <h2>Login Verification</h2>
+      <p>You are logging in as <strong>${role.toUpperCase()}</strong>.</p>
+      <p>Your verification code is:</p>
+      <h1 style="letter-spacing: 8px;">${code}</h1>
+      <p>This code expires in 10 minutes.</p>
+      <p>If you did not attempt to log in, please ignore this email.</p>
+    `,
+  });
+};
+
+// add to exports
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendAppointmentStatusEmail,
   sendVerificationEmail,
   sendPaymentReceiptEmail,
-  sendAdminPaymentNotificationEmail, // ← add this
+  sendAdminPaymentNotificationEmail,
+  sendLoginCodeEmail,
 };

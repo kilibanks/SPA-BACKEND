@@ -4,6 +4,8 @@ const tokenService = require("../../services/token.service");
 const emailService = require("../../services/email.service");
 const ApiError = require("../../utils/ApiError");
 
+const { sendLoginCodeEmail } = require("../../services/email.service");
+
 const register = async ({
   firstName,
   surname,
@@ -436,9 +438,63 @@ const login = async ({
 };
 
 
+
+// Step 1: validate credentials, send 2FA code
+const initiateLogin = async ({ email, password, role }) => {
+  email = email.trim().toLowerCase();
+
+  const user = await userRepository.findByEmailAndRole(email, role);
+
+  if (!user) throw new ApiError(401, "Invalid credentials");
+
+  const isPasswordValid = await bcrypt.compare(password, user.hashed_password);
+
+  if (!isPasswordValid) throw new ApiError(401, "Invalid credentials");
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires_at = new Date(Date.now() + 10 * 60 * 1000);
+
+  await userRepository.createLoginCode({ email, role, code, expires_at });
+  await sendLoginCodeEmail(email, code, role);
+
+  return { requiresCode: true, email, role };
+};
+
+// Step 2: verify 2FA code, return token
+const verifyLoginCode = async ({ email, role, code }) => {
+  email = email.trim().toLowerCase();
+
+  const record = await userRepository.findLoginCode({ email, role, code });
+
+  if (!record) throw new ApiError(400, "Invalid verification code");
+
+  if (new Date(record.expires_at) < new Date()) {
+    await userRepository.markLoginCodeUsed(record.id);
+    throw new ApiError(400, "Verification code expired");
+  }
+
+  await userRepository.markLoginCodeUsed(record.id);
+
+  const user = await userRepository.findByEmailAndRole(email, role);
+
+  const token = tokenService.generateToken({
+    id: user.customer_id || user.supplier_id || user.admin_id,
+    email: user.email,
+    role,
+  });
+
+  const { hashed_password, ...safeUser } = user;
+
+  return { user: safeUser, token };
+};
+
+
+
 module.exports = {
   register,
   verifyEmail,
   resendVerification,
-  login
+  login,
+  initiateLogin,
+  verifyLoginCode,
 };

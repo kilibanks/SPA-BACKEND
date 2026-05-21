@@ -203,6 +203,37 @@ const findTempUserByEmailAndType = async (email, userType) => {
 };
 
 
+//login code DB methods
+const createLoginCode = async ({ email, role, code, expires_at }) => {
+  // invalidate any existing unused codes for this email+role
+  await pool.query(
+    `UPDATE login_codes SET used = 1 WHERE email = ? AND role = ? AND used = 0`,
+    [email, role]
+  );
+
+  const [result] = await pool.query(
+    `INSERT INTO login_codes (email, role, code, expires_at) VALUES (?, ?, ?, ?)`,
+    [email, role, code, expires_at]
+  );
+  return result;
+};
+
+const findLoginCode = async ({ email, role, code }) => {
+  const [rows] = await pool.query(
+    `SELECT * FROM login_codes
+     WHERE email = ? AND role = ? AND code = ? AND used = 0
+     ORDER BY created_at DESC LIMIT 1`,
+    [email, role, code]
+  );
+  return rows[0] || null;
+};
+
+const markLoginCodeUsed = async (id) => {
+  await pool.query(`UPDATE login_codes SET used = 1 WHERE id = ?`, [id]);
+};
+
+
+
 module.exports = {
   createCustomer,
   createSupplier,
@@ -215,4 +246,8 @@ module.exports = {
   findByEmailAndRole,
   updateTempUserEmailCode,
   findTempUserByEmailAndType,
+
+  createLoginCode,
+  findLoginCode,
+  markLoginCodeUsed,
 };
