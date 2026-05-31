@@ -6,8 +6,8 @@ const createAppointment = async (
   userId,
   { staff_id, service_ids, scheduled_at, notes },
 ) => {
-  const staff = await appointmentRepository.findStaffById(staff_id);
-  if (!staff) {
+  const employee = await appointmentRepository.findEmployeeById(staff_id);
+  if (!employee) {
     throw new ApiError(400, "Selected staff member does not exist");
   }
 
@@ -16,17 +16,15 @@ const createAppointment = async (
     throw new ApiError(400, "One or more selected services are invalid");
   }
 
+  const [date, time] = scheduled_at.split("T");
   const appointment = await appointmentRepository.createAppointment({
-    user_id: userId,
-    staff_id,
-    scheduled_at,
+    customer_id: userId,
+    employee_id: staff_id,
+    appointment_date: date,
+    appointment_time: time,
     notes,
   });
 
-  await appointmentRepository.addAppointmentServices(
-    appointment.id,
-    service_ids,
-  );
   const appointmentDetails = await appointmentRepository.getAppointmentDetails(
     appointment.id,
   );
@@ -38,7 +36,7 @@ const createAppointment = async (
     appointmentDetails.status,
   );
 
-  return appointmentDetails;
+  return appointmentDetails;  // ← single }; here
 };
 
 const getAppointmentsForUser = async (userId) => {
@@ -93,6 +91,7 @@ const createPayment = async (
     amount,
     method,
     transaction_id,
+    status: "completed",
   });
 
   return payment;

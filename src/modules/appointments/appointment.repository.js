@@ -1,14 +1,15 @@
 const { pool } = require("../../config/db");
 
 const createAppointment = async ({
-  user_id,
-  staff_id,
-  scheduled_at,
+  customer_id,
+  employee_id,
+  appointment_date,
+  appointment_time,
   notes,
 }) => {
   const [result] = await pool.query(
-    "INSERT INTO appointments (user_id, staff_id, scheduled_at, notes) VALUES (?, ?, ?, ?)",
-    [user_id, staff_id, scheduled_at, notes || null],
+    "INSERT INTO client_appointments (customer_id, service_id, employee_id, appointment_date, appointment_time, notes) VALUES (?, ?, ?, ?, ?, ?)",
+    [customer_id, null, employee_id, appointment_date, appointment_time, notes || null],
   );
   return getAppointmentDetails(result.insertId);
 };
@@ -23,31 +24,32 @@ const addAppointmentServices = async (appointment_id, serviceIds) => {
 };
 
 const updateAppointmentStatus = async (appointmentId, status) => {
-  await pool.query("UPDATE appointments SET status = ? WHERE id = ?", [
-    status,
-    appointmentId,
-  ]);
+  await pool.query(
+    "UPDATE client_appointments SET status = ? WHERE appointment_id = ?",
+    [status, appointmentId],
+  );
   return getAppointmentDetails(appointmentId);
 };
 
 const getAppointmentDetails = async (appointmentId) => {
   const [appointments] = await pool.query(
     `SELECT
-      a.id,
-      a.user_id,
-      u.name AS user_name,
-      u.email AS user_email,
-      a.staff_id,
-      s.name AS staff_name,
-      s.email AS staff_email,
-      a.status,
-      a.scheduled_at,
-      a.notes,
-      a.created_at
-    FROM appointments a
-    JOIN users u ON a.user_id = u.id
-    LEFT JOIN staff s ON a.staff_id = s.id
-    WHERE a.id = ?`,
+      ca.appointment_id AS id,
+      ca.customer_id AS user_id,
+      c.email AS user_email,
+      c.first_name AS user_name,
+      ca.employee_id AS staff_id,
+      CONCAT(e.first_name, ' ', e.last_name) AS staff_name,
+      ca.status,
+      ca.appointment_date,
+      ca.appointment_time,
+      ca.notes,
+      ca.created_at,
+      ca.service_id
+    FROM client_appointments ca
+    LEFT JOIN customers c ON ca.customer_id = c.customer_id
+    LEFT JOIN employees e ON ca.employee_id = e.employee_id
+    WHERE ca.appointment_id = ?`,
     [appointmentId],
   );
 
@@ -56,58 +58,61 @@ const getAppointmentDetails = async (appointmentId) => {
 
   const [services] = await pool.query(
     `SELECT
-      svc.id,
-      svc.title,
-      svc.description,
-      svc.price,
-      svc.duration_minutes,
-      appt_service.quantity
-    FROM appointment_services appt_service
-    JOIN services svc ON appt_service.service_id = svc.id
-    WHERE appt_service.appointment_id = ?`,
-    [appointmentId],
+      s.service_id AS id,
+      s.title,
+      s.description,
+      s.price,
+      s.duration_minutes
+    FROM services s
+    WHERE s.service_id = ?`,
+    [appointment.service_id],
   );
 
   const [payments] = await pool.query(
-    "SELECT id, amount, method, status, transaction_id, created_at FROM payments WHERE appointment_id = ?",
+    "SELECT * FROM payments WHERE appointment_id = ?",
     [appointmentId],
   );
 
   return {
     ...appointment,
-    services,
-    payments,
+    services: services || [],
+    payments: payments || [],
   };
 };
 
 const getAppointmentsByUser = async (userId) => {
   const [rows] = await pool.query(
     `SELECT
-      a.id,
-      a.user_id,
-      a.staff_id,
-      s.name AS staff_name,
-      a.status,
-      a.scheduled_at,
-      a.notes,
-      a.created_at
-    FROM appointments a
-    LEFT JOIN staff s ON a.staff_id = s.id
-    WHERE a.user_id = ?
-    ORDER BY a.scheduled_at DESC`,
+      ca.appointment_id AS id,
+      ca.customer_id AS user_id,
+      ca.employee_id AS staff_id,
+      CONCAT(e.first_name, ' ', e.last_name) AS staff_name,
+      ca.status,
+      ca.appointment_date,
+      ca.appointment_time,
+      ca.notes,
+      ca.created_at,
+      ca.service_id
+    FROM client_appointments ca
+    LEFT JOIN employees e ON ca.employee_id = e.employee_id
+    WHERE ca.customer_id = ?
+    ORDER BY ca.appointment_date DESC, ca.appointment_time DESC`,
     [userId],
   );
 
   return Promise.all(
     rows.map(async (appointment) => {
       const [services] = await pool.query(
-        `SELECT svc.id, svc.title, svc.price, svc.duration_minutes, appt_service.quantity
-       FROM appointment_services appt_service
-       JOIN services svc ON appt_service.service_id = svc.id
-       WHERE appt_service.appointment_id = ?`,
+        `SELECT s.service_id AS id, s.title, s.price, s.duration_minutes
+         FROM services s
+         WHERE s.service_id = ?`,
+        [appointment.service_id],
+      );
+      const [payments] = await pool.query(
+        "SELECT * FROM payments WHERE appointment_id = ?",
         [appointment.id],
       );
-      return { ...appointment, services };
+      return { ...appointment, services: services || [], payments: payments || [] };
     }),
   );
 };
@@ -117,10 +122,11 @@ const createPayment = async ({
   amount,
   method,
   transaction_id,
+  status = "completed",
 }) => {
   const [result] = await pool.query(
-    "INSERT INTO payments (appointment_id, amount, method, transaction_id) VALUES (?, ?, ?, ?)",
-    [appointment_id, amount, method, transaction_id],
+    "INSERT INTO payments (appointment_id, amount, method, status, transaction_id) VALUES (?, ?, ?, ?, ?)",
+    [appointment_id, amount, method, status, transaction_id],
   );
   const [rows] = await pool.query(
     "SELECT id, appointment_id, amount, method, status, transaction_id, created_at FROM payments WHERE id = ?",
@@ -130,9 +136,18 @@ const createPayment = async ({
 };
 
 const findStaffById = async (staffId) => {
-  const [rows] = await pool.query("SELECT * FROM staff WHERE id = ?", [
-    staffId,
-  ]);
+  const [rows] = await pool.query(
+    "SELECT * FROM employees WHERE employee_id = ?",
+    [staffId],
+  );
+  return rows[0] || null;
+};
+
+const findEmployeeById = async (employeeId) => {
+  const [rows] = await pool.query(
+    "SELECT * FROM employees WHERE employee_id = ?",
+    [employeeId],
+  );
   return rows[0] || null;
 };
 
@@ -140,7 +155,7 @@ const findServicesByIds = async (serviceIds) => {
   if (!serviceIds || !serviceIds.length) return [];
   const placeholders = serviceIds.map(() => "?").join(",");
   const [rows] = await pool.query(
-    `SELECT * FROM services WHERE id IN (${placeholders})`,
+    `SELECT * FROM services WHERE service_id IN (${placeholders})`,
     serviceIds,
   );
   return rows;
@@ -154,5 +169,6 @@ module.exports = {
   getAppointmentsByUser,
   createPayment,
   findStaffById,
+  findEmployeeById,
   findServicesByIds,
 };

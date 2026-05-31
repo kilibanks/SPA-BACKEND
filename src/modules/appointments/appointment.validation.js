@@ -7,7 +7,7 @@ const createAppointmentSchema = Joi.object({
     .min(1)
     .required(),
   scheduled_at: Joi.string().isoDate().required(),
-  notes: Joi.string().max(500).optional(),
+  notes: Joi.string().max(500).allow("").optional(),
 });
 
 const updateStatusSchema = Joi.object({
