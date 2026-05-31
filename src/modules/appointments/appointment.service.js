@@ -6,9 +6,14 @@ const createAppointment = async (
   userId,
   { staff_id, service_ids, scheduled_at, notes },
 ) => {
-  const employee = await appointmentRepository.findEmployeeById(staff_id);
-  if (!employee) {
-    throw new ApiError(400, "Selected staff member does not exist");
+  // If staff_id is provided (should only be by admin), validate it. Otherwise allow null.
+  let employeeId = null;
+  if (staff_id) {
+    const employee = await appointmentRepository.findEmployeeById(staff_id);
+    if (!employee) {
+      throw new ApiError(400, "Selected staff member does not exist");
+    }
+    employeeId = staff_id;
   }
 
   const services = await appointmentRepository.findServicesByIds(service_ids);
@@ -19,7 +24,8 @@ const createAppointment = async (
   const [date, time] = scheduled_at.split("T");
   const appointment = await appointmentRepository.createAppointment({
     customer_id: userId,
-    employee_id: staff_id,
+    service_id: service_ids && service_ids.length ? service_ids[0] : null,
+    employee_id: employeeId,
     appointment_date: date,
     appointment_time: time,
     notes,
@@ -36,11 +42,15 @@ const createAppointment = async (
     appointmentDetails.status,
   );
 
-  return appointmentDetails;  // ← single }; here
+  return appointmentDetails;
 };
 
 const getAppointmentsForUser = async (userId) => {
   return await appointmentRepository.getAppointmentsByUser(userId);
+};
+
+const getActiveEmployees = async () => {
+  return await appointmentRepository.getActiveEmployees();
 };
 
 const getAppointmentById = async (userId, appointmentId) => {
@@ -50,6 +60,40 @@ const getAppointmentById = async (userId, appointmentId) => {
     throw new ApiError(404, "Appointment not found");
   }
   return appointment;
+};
+
+const getAllBookings = async () => {
+  return await appointmentRepository.getAllAppointments();
+};
+
+const assignEmployee = async (adminId, appointmentId, employeeId) => {
+  const employee = await appointmentRepository.findEmployeeById(employeeId);
+  if (!employee) {
+    throw new ApiError(400, "Employee not found");
+  }
+
+  // ensure appointment exists
+  const appointment = await appointmentRepository.getAppointmentDetails(
+    appointmentId,
+  );
+  if (!appointment) {
+    throw new ApiError(404, "Appointment not found");
+  }
+
+  const updated = await appointmentRepository.assignEmployeeToAppointment(
+    appointmentId,
+    employeeId,
+  );
+
+  // notify customer
+  await emailService.sendAppointmentStatusEmail(
+    updated.user_email,
+    updated.user_name,
+    updated,
+    updated.status,
+  );
+
+  return updated;
 };
 
 const updateAppointmentStatus = async (userId, appointmentId, status) => {
@@ -101,6 +145,9 @@ module.exports = {
   createAppointment,
   getAppointmentsForUser,
   getAppointmentById,
+  getAllBookings,
+  getActiveEmployees,
+  assignEmployee,
   updateAppointmentStatus,
   createPayment,
 };

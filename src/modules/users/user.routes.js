@@ -8,6 +8,8 @@ const { updateUserSchema } = require('./user.validation');
 // All user routes are protected
 router.use(authMiddleware);
 
+router.get('/customers', userController.getAllCustomers);
+router.get('/counts', userController.getDashboardStats);
 router.get('/', userController.getAllUsers);
 router.get('/me', userController.getMe);
 router.get('/:id', userController.getUserById);

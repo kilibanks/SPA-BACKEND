@@ -28,6 +28,24 @@ const getUserById = async (req, res, next) => {
   }
 };
 
+const getDashboardStats = async (req, res, next) => {
+  try {
+    const stats = await userService.getDashboardStats();
+    return res.status(200).json(ApiResponse.success('Dashboard stats fetched successfully', stats));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllCustomers = async (req, res, next) => {
+  try {
+    const customers = await userService.getAllCustomers();
+    return res.status(200).json(ApiResponse.success('Customers fetched successfully', customers));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateUser = async (req, res, next) => {
   try {
     const user = await userService.updateUser(req.params.id, req.body);
@@ -46,4 +64,4 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllUsers, getMe, getUserById, updateUser, deleteUser };
+module.exports = { getAllUsers, getMe, getUserById, getAllCustomers, getDashboardStats, updateUser, deleteUser };

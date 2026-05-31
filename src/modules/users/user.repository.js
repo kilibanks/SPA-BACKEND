@@ -194,6 +194,15 @@ const findByEmailAndRole = async (email, role) => {
   return null;
 };
 
+const findAllCustomers = async () => {
+  const [rows] = await pool.query(
+    `SELECT customer_id, first_name, last_name, phone, email, gender, date_of_birth, created_at
+     FROM customers
+     ORDER BY created_at DESC`
+  );
+  return rows;
+};
+
 const findTempUserByEmailAndType = async (email, userType) => {
   const [rows] = await pool.query(
     `SELECT * FROM temp_users WHERE email = ? AND user_type = ?`,
@@ -232,7 +241,71 @@ const markLoginCodeUsed = async (id) => {
   await pool.query(`UPDATE login_codes SET used = 1 WHERE id = ?`, [id]);
 };
 
+const countCustomers = async () => {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM customers`
+  );
+  return rows[0].count;
+};
 
+const countSuppliers = async () => {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS count FROM suppliers`
+  );
+  return rows[0].count;
+};
+
+const findAll = async () => {
+  const [rows] = await pool.query(
+    `SELECT id, name, email, created_at
+     FROM users
+     ORDER BY created_at DESC`
+  );
+  return rows;
+};
+
+const findById = async (id) => {
+  const [rows] = await pool.query(
+    `SELECT id, name, email, created_at
+     FROM users
+     WHERE id = ?`,
+    [id]
+  );
+  return rows[0] || null;
+};
+
+const update = async (id, data) => {
+  const fields = [];
+  const values = [];
+
+  if (data.name) {
+    fields.push('name = ?');
+    values.push(data.name);
+  }
+  if (data.email) {
+    fields.push('email = ?');
+    values.push(data.email);
+  }
+  if (data.password) {
+    fields.push('password = ?');
+    values.push(data.password);
+  }
+
+  if (fields.length === 0) {
+    return await findById(id);
+  }
+
+  values.push(id);
+  await pool.query(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+    values
+  );
+  return await findById(id);
+};
+
+const remove = async (id) => {
+  await pool.query(`DELETE FROM users WHERE id = ?`, [id]);
+};
 
 module.exports = {
   createCustomer,
@@ -244,10 +317,17 @@ module.exports = {
   findSupplierByEmailOrPhone,
   findRolesByEmail,
   findByEmailAndRole,
+  findAllCustomers,
   updateTempUserEmailCode,
   findTempUserByEmailAndType,
 
   createLoginCode,
   findLoginCode,
   markLoginCodeUsed,
+  countCustomers,
+  countSuppliers,
+  findAll,
+  findById,
+  update,
+  remove,
 };

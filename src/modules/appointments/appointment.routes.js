@@ -7,6 +7,7 @@ const {
   createAppointmentSchema,
   updateStatusSchema,
   createPaymentSchema,
+  assignEmployeeSchema,
 } = require("./appointment.validation");
 
 router.use(authMiddleware);
@@ -16,6 +17,9 @@ router.post(
   validate(createAppointmentSchema),
   appointmentController.createAppointment,
 );
+// Admin: list all bookings
+router.get("/admin/bookings", appointmentController.getAllBookings);
+router.get("/admin/employees", appointmentController.getActiveEmployees);
 router.get("/", appointmentController.getAppointments);
 router.get("/:id", appointmentController.getAppointmentById);
 router.patch(
@@ -27,6 +31,13 @@ router.post(
   "/:id/payments",
   validate(createPaymentSchema),
   appointmentController.createPayment,
+);
+
+// Admin: assign employee to appointment
+router.patch(
+  "/:id/assign",
+  validate(assignEmployeeSchema),
+  appointmentController.assignEmployee,
 );
 
 module.exports = router;

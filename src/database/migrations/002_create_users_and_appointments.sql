@@ -67,3 +67,19 @@ VALUES
   ('Swedish Massage', 'Relaxing full-body massage', 80.00, 60),
   ('Facial Treatment', 'Deep cleansing facial treatment', 65.00, 45),
   ('Manicure', 'Nail grooming and polish', 30.00, 30);
+
+
+  INSERT INTO employees (
+    first_name,
+    last_name,
+    phone,
+    email,
+    specialization,
+    hire_date,
+    status
+)
+VALUES
+('Mary', 'Wanjiku', '+254700111222', 'mary@spa.com', 'Swedish Massage', '2026-01-15', 'Active'),
+('James', 'Otieno', '+254700333444', 'james@spa.com', 'Deep Tissue Massage', '2026-02-01', 'Active'),
+('Grace', 'Achieng', '+254700555666', 'grace@spa.com', 'Facial Treatments', '2026-03-10', 'Active'),
+('Peter', 'Mwangi', '+254700777888', 'peter@spa.com', 'Aromatherapy', '2026-04-05', 'Inactive');

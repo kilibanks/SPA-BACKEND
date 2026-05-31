@@ -1,13 +1,16 @@
 const Joi = require("joi");
 
 const createAppointmentSchema = Joi.object({
-  staff_id: Joi.number().integer().positive().required(),
   service_ids: Joi.array()
     .items(Joi.number().integer().positive())
     .min(1)
     .required(),
   scheduled_at: Joi.string().isoDate().required(),
   notes: Joi.string().max(500).allow("").optional(),
+});
+
+const assignEmployeeSchema = Joi.object({
+  employee_id: Joi.number().integer().positive().required(),
 });
 
 const updateStatusSchema = Joi.object({
@@ -28,4 +31,5 @@ module.exports = {
   createAppointmentSchema,
   updateStatusSchema,
   createPaymentSchema,
+  assignEmployeeSchema,
 };

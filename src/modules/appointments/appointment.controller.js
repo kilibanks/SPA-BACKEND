@@ -83,10 +83,56 @@ const createPayment = async (req, res, next) => {
   }
 };
 
+const getAllBookings = async (req, res, next) => {
+  try {
+    // admin-only
+    if (req.user.role !== "admin") {
+      return res.status(403).json(ApiResponse.error("Forbidden"));
+    }
+    const bookings = await appointmentService.getAllBookings();
+    return res.status(200).json(ApiResponse.success("Bookings fetched", bookings));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const assignEmployee = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json(ApiResponse.error("Forbidden"));
+    }
+    const appointment = await appointmentService.assignEmployee(
+      req.user.id,
+      req.params.id,
+      req.body.employee_id,
+    );
+    return res
+      .status(200)
+      .json(ApiResponse.success("Employee assigned", appointment));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getActiveEmployees = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json(ApiResponse.error("Forbidden"));
+    }
+    const employees = await appointmentService.getActiveEmployees();
+    return res.status(200).json(ApiResponse.success("Employees fetched", employees));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createAppointment,
   getAppointments,
   getAppointmentById,
   updateAppointmentStatus,
   createPayment,
+  getAllBookings,
+  getActiveEmployees,
+  assignEmployee,
 };
