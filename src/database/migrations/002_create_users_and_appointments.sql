@@ -16,10 +16,12 @@ CREATE TABLE IF NOT EXISTS staff (
 
 CREATE TABLE IF NOT EXISTS services (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(150) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  service_name VARCHAR(100) NULL,
   description TEXT NULL,
   price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   duration_minutes INT NOT NULL DEFAULT 30,
+  status ENUM('Available', 'Unavailable') DEFAULT 'Available',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

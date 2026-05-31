@@ -5,7 +5,8 @@ const app = express();
 app.use(cors());
 
 const paymentRoutes = require("./modules/payments/payment.routes");
-
+const serviceRoutes = require("./modules/services/service.routes");
+const categoryRoutes = require("./modules/services/category.routes");
 
 const webhookRoutes = require("./services/webhook.routes");
 
@@ -24,6 +25,8 @@ const appointmentRoutes = require("./modules/appointments/appointment.routes");
 
 
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/services", serviceRoutes);
+app.use("/api/v1/categories", categoryRoutes);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
