@@ -28,7 +28,7 @@ const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
       <h1>Hi ${name},</h1>
       <p>Your appointment is now <strong>${status}</strong>.</p>
       <p>Scheduled for: ${appointmentDate}</p>
-      <p>Assigned staff: ${appointment.staff_name || "TBD"}</p>
+      <p>Assigned staff: ${appointment.staff_name || "Not assigned"}</p>
       <p>Service:</p>
       <ul>
         ${appointment.services.map((svc) => `<li>${svc.title} (KES ${svc.price})</li>`).join("")}
