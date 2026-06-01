@@ -46,6 +46,33 @@ const getAllCustomers = async (req, res, next) => {
   }
 };
 
+const getCustomerById = async (req, res, next) => {
+  try {
+    const customer = await userService.getCustomerById(req.params.id);
+    return res.status(200).json(ApiResponse.success('Customer fetched successfully', customer));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCustomer = async (req, res, next) => {
+  try {
+    const customer = await userService.updateCustomer(req.params.id, req.body);
+    return res.status(200).json(ApiResponse.success('Customer updated successfully', customer));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteCustomer = async (req, res, next) => {
+  try {
+    await userService.deleteCustomer(req.params.id);
+    return res.status(200).json(ApiResponse.success('Customer deleted successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateUser = async (req, res, next) => {
   try {
     const user = await userService.updateUser(req.params.id, req.body);
@@ -64,4 +91,4 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllUsers, getMe, getUserById, getAllCustomers, getDashboardStats, updateUser, deleteUser };
+module.exports = { getAllUsers, getMe, getUserById, getAllCustomers, getCustomerById, getDashboardStats, updateCustomer, deleteCustomer, updateUser, deleteUser };

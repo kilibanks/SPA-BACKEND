@@ -131,17 +131,70 @@ const createPayment = async ({
   amount,
   method,
   transaction_id,
+  phone_number,
   status = "completed",
 }) => {
-  const [result] = await pool.query(
-    "INSERT INTO payments (appointment_id, amount, method, status, transaction_id) VALUES (?, ?, ?, ?, ?)",
-    [appointment_id, amount, method, status, transaction_id],
-  );
+  const values = {
+    appointment_id,
+    amount,
+    method,
+    status,
+    transaction_id,
+    phone_number,
+  };
+
+  const insertWithColumns = async (columns) => {
+    const placeholders = columns.map(() => "?").join(", ");
+    const query = `INSERT INTO payments (${columns.join(", ")}) VALUES (${placeholders})`;
+    const params = columns.map((column) => values[column]);
+    return await pool.query(query, params);
+  };
+
+  const candidateColumns = [
+    "appointment_id",
+    "amount",
+    "method",
+    "status",
+    "transaction_id",
+    "phone_number",
+  ];
+
+  let columns = candidateColumns.filter((column) => values[column] !== undefined);
+
+  while (true) {
+    try {
+      const [result] = await insertWithColumns(columns);
+      const [rows] = await pool.query(
+        "SELECT * FROM payments WHERE id = ?",
+        [result.insertId],
+      );
+      return rows[0];
+    } catch (error) {
+      if (error.code === "ER_BAD_FIELD_ERROR") {
+        const match = /Unknown column '(.+?)'/.exec(error.sqlMessage || error.message || "");
+        if (match && columns.includes(match[1])) {
+          columns = columns.filter((column) => column !== match[1]);
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+};
+
+const findPaymentByTransactionId = async (transactionId) => {
   const [rows] = await pool.query(
-    "SELECT id, appointment_id, amount, method, status, transaction_id, created_at FROM payments WHERE id = ?",
-    [result.insertId],
+    "SELECT * FROM payments WHERE transaction_id = ? LIMIT 1",
+    [transactionId],
   );
-  return rows[0];
+  return rows[0] || null;
+};
+
+const updatePaymentStatus = async (transactionId, status) => {
+  await pool.query(
+    "UPDATE payments SET status = ? WHERE transaction_id = ?",
+    [status, transactionId],
+  );
 };
 
 const findStaffById = async (staffId) => {

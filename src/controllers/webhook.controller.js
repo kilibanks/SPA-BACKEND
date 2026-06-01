@@ -2,6 +2,7 @@
 const crypto = require("crypto");
 const { dealEvents } = require("../modules/payments/payment.services");
 const paymentStore = require("../modules/payments/payment.store");
+const appointmentRepository = require("../modules/appointments/appointment.repository");
 const {
   sendPaymentReceiptEmail,
   sendAdminPaymentNotificationEmail,
@@ -44,6 +45,14 @@ exports.handle = async (req, res) => {
 
         // Delete FIRST to prevent duplicate processing if webhook fires twice
         paymentStore.delete(transactionId);
+
+        const paymentRecord = await appointmentRepository.findPaymentByTransactionId(
+          transactionId,
+        );
+        if (paymentRecord) {
+          await appointmentRepository.updatePaymentStatus(transactionId, "completed");
+          console.log(`✅ Updated payment status for transaction ${transactionId}`);
+        }
 
         if (paymentData.email) {
           await Promise.all([

@@ -22,9 +22,18 @@ const updateStatusSchema = Joi.object({
 const createPaymentSchema = Joi.object({
   amount: Joi.number().positive().required(),
   method: Joi.string()
-    .valid("card", "cash", "bank_transfer", "other")
+    .valid("card", "cash", "bank_transfer", "other", "mpesa")
     .required(),
-  transaction_id: Joi.string().max(100).required(),
+  transaction_id: Joi.when("method", {
+    is: "mpesa",
+    then: Joi.forbidden(),
+    otherwise: Joi.string().max(100).required(),
+  }),
+  phone_number: Joi.when("method", {
+    is: "mpesa",
+    then: Joi.string().max(30).required(),
+    otherwise: Joi.forbidden(),
+  }),
 });
 
 module.exports = {

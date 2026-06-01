@@ -194,6 +194,61 @@ const findByEmailAndRole = async (email, role) => {
   return null;
 };
 
+const findCustomerById = async (customerId) => {
+  const [rows] = await pool.query(
+    `SELECT customer_id, first_name, last_name, phone, email, gender, date_of_birth, created_at
+     FROM customers
+     WHERE customer_id = ?`,
+    [customerId]
+  );
+  return rows[0] || null;
+};
+
+const updateCustomer = async (customerId, data) => {
+  const fields = [];
+  const values = [];
+
+  if (data.first_name) {
+    fields.push('first_name = ?');
+    values.push(data.first_name);
+  }
+  if (data.last_name) {
+    fields.push('last_name = ?');
+    values.push(data.last_name);
+  }
+  if (data.phone) {
+    fields.push('phone = ?');
+    values.push(data.phone);
+  }
+  if (data.email) {
+    fields.push('email = ?');
+    values.push(data.email);
+  }
+  if (data.gender) {
+    fields.push('gender = ?');
+    values.push(data.gender);
+  }
+  if (data.date_of_birth) {
+    fields.push('date_of_birth = ?');
+    values.push(data.date_of_birth);
+  }
+
+  if (fields.length === 0) {
+    return await findCustomerById(customerId);
+  }
+
+  values.push(customerId);
+  await pool.query(
+    `UPDATE customers SET ${fields.join(', ')} WHERE customer_id = ?`,
+    values
+  );
+  return await findCustomerById(customerId);
+};
+
+const deleteCustomer = async (customerId) => {
+  await pool.query(`DELETE FROM customers WHERE customer_id = ?`, [customerId]);
+};
+
 const findAllCustomers = async () => {
   const [rows] = await pool.query(
     `SELECT customer_id, first_name, last_name, phone, email, gender, date_of_birth, created_at
@@ -317,6 +372,9 @@ module.exports = {
   findSupplierByEmailOrPhone,
   findRolesByEmail,
   findByEmailAndRole,
+  findCustomerById,
+  updateCustomer,
+  deleteCustomer,
   findAllCustomers,
   updateTempUserEmailCode,
   findTempUserByEmailAndType,

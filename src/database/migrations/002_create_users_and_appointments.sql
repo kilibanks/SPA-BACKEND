@@ -50,9 +50,10 @@ CREATE TABLE IF NOT EXISTS payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   appointment_id INT NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
-  method ENUM('card', 'cash', 'bank_transfer', 'other') NOT NULL,
+  method ENUM('card', 'cash', 'bank_transfer', 'other', 'mpesa') NOT NULL,
   status ENUM('pending', 'completed', 'failed') NOT NULL DEFAULT 'pending',
-  transaction_id VARCHAR(100) NOT NULL,
+  transaction_id VARCHAR(100) NULL,
+  phone_number VARCHAR(30) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 );

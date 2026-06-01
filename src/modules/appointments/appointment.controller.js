@@ -83,6 +83,19 @@ const createPayment = async (req, res, next) => {
   }
 };
 
+const cancelAppointment = async (req, res, next) => {
+  try {
+    const appointment = await appointmentService.updateAppointmentStatus(
+      req.user.id,
+      req.params.id,
+      "cancelled",
+    );
+    return res.status(200).json(ApiResponse.success("Appointment cancelled", appointment));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getAllBookings = async (req, res, next) => {
   try {
     // admin-only
@@ -132,6 +145,7 @@ module.exports = {
   getAppointmentById,
   updateAppointmentStatus,
   createPayment,
+  cancelAppointment,
   getAllBookings,
   getActiveEmployees,
   assignEmployee,

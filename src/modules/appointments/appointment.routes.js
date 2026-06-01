@@ -32,6 +32,14 @@ router.post(
   validate(createPaymentSchema),
   appointmentController.createPayment,
 );
+router.post(
+  "/:id/pay",
+  validate(createPaymentSchema),
+  appointmentController.createPayment,
+);
+
+// Cancel appointment (client cancels their own appointment)
+router.post("/:id/cancel", appointmentController.cancelAppointment);
 
 // Admin: assign employee to appointment
 router.patch(

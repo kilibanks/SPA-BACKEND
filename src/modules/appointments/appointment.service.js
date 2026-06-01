@@ -1,4 +1,5 @@
 const appointmentRepository = require("./appointment.repository");
+const paymentService = require("../payments/payment.services");
 const ApiError = require("../../utils/ApiError");
 const emailService = require("../../services/email.service");
 
@@ -122,7 +123,7 @@ const updateAppointmentStatus = async (userId, appointmentId, status) => {
 const createPayment = async (
   userId,
   appointmentId,
-  { amount, method, transaction_id },
+  { amount, method, transaction_id, phone_number },
 ) => {
   const appointment =
     await appointmentRepository.getAppointmentDetails(appointmentId);
@@ -130,11 +131,35 @@ const createPayment = async (
     throw new ApiError(404, "Appointment not found");
   }
 
+  if (method === "mpesa") {
+    const result = await paymentService.topUp({
+      buyerPhone: phone_number,
+      amount,
+      email: appointment.user_email,
+    });
+
+    const payment = await appointmentRepository.createPayment({
+      appointment_id: appointmentId,
+      amount,
+      method,
+      transaction_id: result.transactionId,
+      phone_number,
+      status: result.paid ? "completed" : "pending",
+    });
+
+    if (!result.paid) {
+      throw new ApiError(408, result.message || "Mpesa payment not completed");
+    }
+
+    return payment;
+  }
+
   const payment = await appointmentRepository.createPayment({
     appointment_id: appointmentId,
     amount,
     method,
-    transaction_id,
+    transaction_id: transaction_id || null,
+    phone_number: phone_number || null,
     status: "completed",
   });
 

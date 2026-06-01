@@ -3,12 +3,15 @@ const router = express.Router();
 const userController = require('./user.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const validate = require('../../middlewares/validate.middleware');
-const { updateUserSchema } = require('./user.validation');
+const { updateUserSchema, updateCustomerSchema } = require('./user.validation');
 
 // All user routes are protected
 router.use(authMiddleware);
 
 router.get('/customers', userController.getAllCustomers);
+router.get('/customers/:id', userController.getCustomerById);
+router.put('/customers/:id', validate(updateCustomerSchema), userController.updateCustomer);
+router.delete('/customers/:id', userController.deleteCustomer);
 router.get('/counts', userController.getDashboardStats);
 router.get('/', userController.getAllUsers);
 router.get('/me', userController.getMe);
