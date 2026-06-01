@@ -20,7 +20,19 @@ const sendPasswordResetEmail = async (to, resetLink) => {
 };
 
 const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
-  const appointmentDate = new Date(appointment.scheduled_at).toLocaleString();
+  const date = appointment.appointment_date?.split("T")[0];
+  const time = appointment.appointment_time;
+  const appointmentDate =
+    date && time
+      ? new Date(`${date}T${time}`).toLocaleString()
+      : "Date not available";
+
+  const servicesList = appointment.services?.length
+    ? appointment.services
+        .map((svc) => `<li>${svc.title} (KES ${svc.price})</li>`)
+        .join("")
+    : "<li>Service details not available</li>";
+
   await sendMail({
     to,
     subject: `Appointment ${status}`,
@@ -29,10 +41,8 @@ const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
       <p>Your appointment is now <strong>${status}</strong>.</p>
       <p>Scheduled for: ${appointmentDate}</p>
       <p>Assigned staff: ${appointment.staff_name || "Not assigned"}</p>
-      <p>Service:</p>
-      <ul>
-        ${appointment.services.map((svc) => `<li>${svc.title} (KES ${svc.price})</li>`).join("")}
-      </ul>
+      <p>Services:</p>
+      <ul>${servicesList}</ul>
       <p>Thank you for booking with us.</p>
     `,
   });
