@@ -50,6 +50,7 @@ const getAppointmentDetails = async (appointmentId) => {
       ca.employee_id AS staff_id,
       CONCAT(e.first_name, ' ', e.last_name) AS staff_name,
       ca.status,
+      ca.payment_status,
       ca.appointment_date,
       ca.appointment_time,
       ca.notes,
@@ -97,6 +98,7 @@ const getAppointmentsByUser = async (userId) => {
       ca.employee_id AS staff_id,
       CONCAT(e.first_name, ' ', e.last_name) AS staff_name,
       ca.status,
+      ca.payment_status,
       ca.appointment_date,
       ca.appointment_time,
       ca.notes,
@@ -131,55 +133,19 @@ const createPayment = async ({
   amount,
   method,
   transaction_id,
-  phone_number,
-  status = "completed",
+  status = "Pending",
 }) => {
-  const values = {
-    appointment_id,
-    amount,
-    method,
-    status,
-    transaction_id,
-    phone_number,
-  };
-
-  const insertWithColumns = async (columns) => {
-    const placeholders = columns.map(() => "?").join(", ");
-    const query = `INSERT INTO payments (${columns.join(", ")}) VALUES (${placeholders})`;
-    const params = columns.map((column) => values[column]);
-    return await pool.query(query, params);
-  };
-
-  const candidateColumns = [
-    "appointment_id",
-    "amount",
-    "method",
-    "status",
-    "transaction_id",
-    "phone_number",
-  ];
-
-  let columns = candidateColumns.filter((column) => values[column] !== undefined);
-
-  while (true) {
-    try {
-      const [result] = await insertWithColumns(columns);
-      const [rows] = await pool.query(
-        "SELECT * FROM payments WHERE id = ?",
-        [result.insertId],
-      );
-      return rows[0];
-    } catch (error) {
-      if (error.code === "ER_BAD_FIELD_ERROR") {
-        const match = /Unknown column '(.+?)'/.exec(error.sqlMessage || error.message || "");
-        if (match && columns.includes(match[1])) {
-          columns = columns.filter((column) => column !== match[1]);
-          continue;
-        }
-      }
-      throw error;
-    }
-  }
+  const [result] = await pool.query(
+    `INSERT INTO payments 
+      (appointment_id, amount, payment_method, payment_status, transaction_id) 
+     VALUES (?, ?, ?, ?, ?)`,
+    [appointment_id, amount, method, status, transaction_id || null],
+  );
+  const [rows] = await pool.query(
+    "SELECT * FROM payments WHERE payment_id = ?",
+    [result.insertId],
+  );
+  return rows[0];
 };
 
 const findPaymentByTransactionId = async (transactionId) => {
@@ -192,7 +158,7 @@ const findPaymentByTransactionId = async (transactionId) => {
 
 const updatePaymentStatus = async (transactionId, status) => {
   await pool.query(
-    "UPDATE payments SET status = ? WHERE transaction_id = ?",
+    "UPDATE payments SET payment_status = ? WHERE transaction_id = ?",
     [status, transactionId],
   );
 };
@@ -251,6 +217,7 @@ const getAllAppointments = async () => {
       ca.employee_id AS staff_id,
       CONCAT(e.first_name, ' ', e.last_name) AS staff_name,
       ca.status,
+      ca.payment_status,
       ca.appointment_date,
       ca.appointment_time,
       ca.notes,
@@ -286,6 +253,8 @@ module.exports = {
   getAppointmentDetails,
   getAppointmentsByUser,
   createPayment,
+  findPaymentByTransactionId,
+  updatePaymentStatus,
   findStaffById,
   findEmployeeById,
   findServicesByIds,
