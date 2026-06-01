@@ -1,4 +1,3 @@
-// payment.services.js
 const axios = require("axios");
 const EventEmitter = require("events");
 const paymentStore = require("./payment.store");
@@ -27,32 +26,23 @@ const createDeal = async ({ buyerPhone, amount }) => {
       description: "Service",
     };
 
-    if (amount<20) throw new Error("The minimum amount is KES 20");
-
+    if (amount < 20) throw new Error("The minimum amount is KES 20");
 
     const dealPush = await axios.post(`${BASE_URL}/deals/create`, payload, {
       headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" },
     });
 
-
     const transactionId =
       dealPush.data?.transactionId ?? dealPush.data?.data?.transactionId;
     if (!transactionId) throw new Error("transactionId missing from createDeal response");
 
-
     return transactionId;
   } catch (error) {
-  console.error(
-    "PESACROW createDeal ERROR:",
-    error.response?.data || error.message
-  );
-
-  throw new Error(
-    error.response?.data?.message ||
-    error.message ||
-    "Deal creation failed"
-  );
-}
+    console.error("PESACROW createDeal ERROR:", error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.message || error.message || "Deal creation failed",
+    );
+  }
 };
 
 const waitForStatus = (transactionId, timeoutMs = 27000) => {
@@ -89,41 +79,48 @@ const waitForStatus = (transactionId, timeoutMs = 27000) => {
   });
 };
 
-const topUp = async ({ buyerPhone, amount, email }) => {
-
+/**
+ * initiateMpesa — creates the deal, fires STK push, saves to paymentStore,
+ * and returns the transactionId IMMEDIATELY without waiting.
+ * This lets the caller save the payment row to DB before waiting,
+ * so the webhook can find it when it fires.
+ */
+const initiateMpesa = async ({ buyerPhone, amount, email }) => {
   if (!buyerPhone) throw new Error("buyerPhone is required");
   if (!amount) throw new Error("amount is required");
   if (!email) throw new Error("email is required");
 
   const normalizedPhone = normalizePhone(buyerPhone);
 
-  const transactionId = await createDeal({
-    buyerPhone: normalizedPhone,
-    amount,
-  });
+  const transactionId = await createDeal({ buyerPhone: normalizedPhone, amount });
 
-  // SAVE EMAIL TEMPORARILY
-  paymentStore.set(transactionId, {
-    email,
-    amount,
-    phone: normalizedPhone,
-  });
+  // Save email for webhook processing
+  paymentStore.set(transactionId, { email, amount, phone: normalizedPhone });
 
+  // Fire STK push
   await axios.post(
     `${BASE_URL}/payments/initiate-stk`,
-    {
-      transactionId,
-      buyerPhone: normalizedPhone,
-      description: "Service",
-    },
+    { transactionId, buyerPhone: normalizedPhone, description: "Service" },
     {
       headers: {
         "x-api-key": process.env.API_KEY,
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
+  return transactionId; // ← return early, before waiting for payment
+};
+
+/**
+ * topUp — legacy all-in-one: initiates + waits. Used by payment.controller.js /pay route.
+ */
+const topUp = async ({ buyerPhone, amount, email }) => {
+  if (!buyerPhone) throw new Error("buyerPhone is required");
+  if (!amount) throw new Error("amount is required");
+  if (!email) throw new Error("email is required");
+
+  const transactionId = await initiateMpesa({ buyerPhone, amount, email });
   return waitForStatus(transactionId, 27000);
 };
 
@@ -132,7 +129,12 @@ const deliverDeal = async (transactionId) => {
     const response = await axios.post(
       `${BASE_URL}/deals/${transactionId}/deliver`,
       {},
-      { headers: { "x-api-key": process.env.API_KEY, "Content-Type": "application/json" } }
+      {
+        headers: {
+          "x-api-key": process.env.API_KEY,
+          "Content-Type": "application/json",
+        },
+      },
     );
     console.log("Deliver response:", response.data);
     return response.data;
@@ -143,7 +145,14 @@ const deliverDeal = async (transactionId) => {
 };
 
 const waitForRelease = (transactionId) => {
-  return waitForStatus(transactionId, 180000); // ✅ 2 args only, 3 mins
+  return waitForStatus(transactionId, 180000);
 };
 
-module.exports = { topUp, deliverDeal, waitForRelease, dealEvents };
+module.exports = {
+  topUp,
+  initiateMpesa,
+  waitForStatus,
+  deliverDeal,
+  waitForRelease,
+  dealEvents,
+};

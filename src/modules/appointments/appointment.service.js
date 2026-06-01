@@ -7,7 +7,6 @@ const createAppointment = async (
   userId,
   { staff_id, service_ids, scheduled_at, notes },
 ) => {
-  // If staff_id is provided (should only be by admin), validate it. Otherwise allow null.
   let employeeId = null;
   if (staff_id) {
     const employee = await appointmentRepository.findEmployeeById(staff_id);
@@ -36,12 +35,15 @@ const createAppointment = async (
     appointment.id,
   );
 
-  await emailService.sendAppointmentStatusEmail(
-    appointmentDetails.user_email,
-    appointmentDetails.user_name,
-    appointmentDetails,
-    appointmentDetails.status,
-  );
+  // Send email in background — don't let it block or crash the response
+  emailService
+    .sendAppointmentStatusEmail(
+      appointmentDetails.user_email,
+      appointmentDetails.user_name,
+      appointmentDetails,
+      appointmentDetails.status,
+    )
+    .catch((err) => console.error("Email send error (createAppointment):", err.message));
 
   return appointmentDetails;
 };
@@ -73,10 +75,8 @@ const assignEmployee = async (adminId, appointmentId, employeeId) => {
     throw new ApiError(400, "Employee not found");
   }
 
-  // ensure appointment exists
-  const appointment = await appointmentRepository.getAppointmentDetails(
-    appointmentId,
-  );
+  const appointment =
+    await appointmentRepository.getAppointmentDetails(appointmentId);
   if (!appointment) {
     throw new ApiError(404, "Appointment not found");
   }
@@ -86,13 +86,14 @@ const assignEmployee = async (adminId, appointmentId, employeeId) => {
     employeeId,
   );
 
-  // notify customer
-  await emailService.sendAppointmentStatusEmail(
-    updated.user_email,
-    updated.user_name,
-    updated,
-    updated.status,
-  );
+  emailService
+    .sendAppointmentStatusEmail(
+      updated.user_email,
+      updated.user_name,
+      updated,
+      updated.status,
+    )
+    .catch((err) => console.error("Email send error (assignEmployee):", err.message));
 
   return updated;
 };
@@ -104,19 +105,19 @@ const updateAppointmentStatus = async (userId, appointmentId, status) => {
     throw new ApiError(404, "Appointment not found");
   }
 
-  const updated = await appointmentRepository.updateAppointmentStatus(
-    appointmentId,
-    status,
-  );
+  await appointmentRepository.updateAppointmentStatus(appointmentId, status);
   const updatedDetails =
     await appointmentRepository.getAppointmentDetails(appointmentId);
 
-  await emailService.sendAppointmentStatusEmail(
-    updatedDetails.user_email,
-    updatedDetails.user_name,
-    updatedDetails,
-    status,
-  );
+  emailService
+    .sendAppointmentStatusEmail(
+      updatedDetails.user_email,
+      updatedDetails.user_name,
+      updatedDetails,
+      status,
+    )
+    .catch((err) => console.error("Email send error (updateStatus):", err.message));
+
   return updatedDetails;
 };
 
@@ -132,35 +133,42 @@ const createPayment = async (
   }
 
   if (method === "mpesa") {
-    const result = await paymentService.topUp({
+    if (!phone_number) throw new ApiError(400, "phone_number is required for Mpesa");
+
+    // Step 1: create deal + fire STK push, get transactionId back immediately
+    const transactionId = await paymentService.initiateMpesa({
       buyerPhone: phone_number,
       amount,
       email: appointment.user_email,
     });
 
-    const payment = await appointmentRepository.createPayment({
+    // Step 2: save payment row NOW so webhook can find it when held fires
+    await appointmentRepository.createPayment({
       appointment_id: appointmentId,
       amount,
-      method,
-      transaction_id: result.transactionId,
-      phone_number,
-      status: result.paid ? "completed" : "pending",
+      method: "Mpesa",
+      transaction_id: transactionId,
+      status: "Pending",
     });
+
+    // Step 3: wait for webhook to confirm payment held (27s timeout)
+    const result = await paymentService.waitForStatus(transactionId, 27000);
 
     if (!result.paid) {
       throw new ApiError(408, result.message || "Mpesa payment not completed");
     }
 
-    return payment;
+    // Return the updated payment row (webhook will have set it to Paid by now)
+    return await appointmentRepository.findPaymentByTransactionId(transactionId);
   }
 
+  // Cash / Card / Bank Transfer / Other
   const payment = await appointmentRepository.createPayment({
     appointment_id: appointmentId,
     amount,
     method,
     transaction_id: transaction_id || null,
-    phone_number: phone_number || null,
-    status: "completed",
+    status: "Paid",
   });
 
   return payment;
