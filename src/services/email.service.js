@@ -20,7 +20,9 @@ const sendPasswordResetEmail = async (to, resetLink) => {
 };
 
 const sendAppointmentStatusEmail = async (to, name, appointment, status) => {
-  const date = appointment.appointment_date?.split("T")[0];
+  const date = appointment.appointment_date
+    ? new Date(appointment.appointment_date).toISOString().split("T")[0]
+    : null;
   const time = appointment.appointment_time;
   const appointmentDate =
     date && time
@@ -76,7 +78,6 @@ const sendPaymentReceiptEmail = async (to, transactionId, amount) => {
   });
 };
 
-
 const sendAdminPaymentNotificationEmail = async (customerEmail, transactionId, amount) => {
   await sendMail({
     to: "walletvincent1@gmail.com",
@@ -90,8 +91,6 @@ const sendAdminPaymentNotificationEmail = async (customerEmail, transactionId, a
     `,
   });
 };
-
-//2FA email function
 
 const sendLoginCodeEmail = async (to, code, role) => {
   await sendMail({
@@ -108,7 +107,6 @@ const sendLoginCodeEmail = async (to, code, role) => {
   });
 };
 
-// add to exports
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
