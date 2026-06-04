@@ -17,6 +17,7 @@ const updateServiceSchema = Joi.object({
   price: Joi.number().positive(),
   duration_minutes: Joi.number().integer().positive(),
   status: Joi.string().valid("Available", "Unavailable"),
+  category_id: Joi.number().integer().positive().optional(),
 }).min(1);
 
 module.exports = {
