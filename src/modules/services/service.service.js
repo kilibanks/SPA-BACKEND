@@ -26,6 +26,7 @@ const createService = async ({
   price,
   duration_minutes,
   status,
+  category_id,
 }) => {
   if (!title || !price || !duration_minutes) {
     throw new ApiError(400, "Title, price, and duration_minutes are required");
@@ -38,6 +39,7 @@ const createService = async ({
     price,
     duration_minutes,
     status,
+    category_id,
   });
 
   return service;

@@ -2,6 +2,7 @@ const Joi = require("joi");
 
 const createServiceSchema = Joi.object({
   title: Joi.string().required().max(255),
+  category_id: Joi.number().integer().positive().optional(),
   service_name: Joi.string().max(100),
   description: Joi.string().allow(null, ""),
   price: Joi.number().required().positive(),
